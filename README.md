@@ -114,3 +114,20 @@ Copyright © 2023 The creators-reward contributors.
 
 [`REUSE.toml`](REUSE.toml) holds the same mapping per file in the
 [REUSE](https://reuse.software) format, and `reuse lint` checks that every file is covered.
+
+## Use of generative AI
+
+**So far.** The first prototypes (from 2023) were written by hand. Since September 2026
+most of the code, tests, and documentation have been written or edited by LLM coding agents (models from Anthropic, OpenAI, Google, Moonshot AI, Zhipu AI and MiniMax 
+run through OpenCode harness), directed and reviewed by the maintainer.  [`AGENTS.md`](AGENTS.md) holds the instructions
+the agents work from.
+This repository starts from a single snapshot; the history before it is not public, so there is no
+per-commit record of that work here.
+
+**From now on.** Development continues the same way. Commits containing AI-generated or
+AI-assisted work say so in an `Assisted-by:` trailer naming the tool, the model and what
+it did.
+
+**Responsibility.** A person decides what is built and how, reviews every change before it
+is merged, and is answerable for every line in the repository, whoever or whatever typed it.
+
