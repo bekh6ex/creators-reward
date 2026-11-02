@@ -1,0 +1,4 @@
+# Frontend module declarations. Recipes live in the project subdirectories.
+
+mod viewer
+mod creator

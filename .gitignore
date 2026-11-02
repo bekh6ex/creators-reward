@@ -1,0 +1,8 @@
+**/node_modules
+**/target
+**/.vite-node
+dev/.state/
+dev/cert
+/.pnpm-store/
+.idea/
+*.iml

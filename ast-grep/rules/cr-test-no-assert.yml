@@ -1,0 +1,34 @@
+id: cr-test-no-assert
+language: rust
+severity: error
+message: "Use googletest matchers in tests, not assert!/assert_eq!/assert_ne!"
+note: "AGENTS.md CONVENTIONS: Rust assertions use googletest matchers; production asserts stay allowed."
+files:
+  - backend/**/*.rs
+rule:
+  all:
+    - any:
+        - pattern: assert!($$$)
+        - pattern: assert_eq!($$$)
+        - pattern: assert_ne!($$$)
+        - pattern: debug_assert!($$$)
+        - pattern: debug_assert_eq!($$$)
+        - pattern: debug_assert_ne!($$$)
+    - any:
+        - inside:
+            kind: function_item
+            stopBy: end
+            follows:
+              stopBy:
+                kind: function_item
+              any:
+                - pattern: "#[test]"
+                - pattern: "#[rstest]"
+                - pattern: "#[tokio::test]"
+        - inside:
+            kind: mod_item
+            stopBy: end
+            follows:
+              stopBy:
+                kind: mod_item
+              pattern: "#[cfg(test)]"

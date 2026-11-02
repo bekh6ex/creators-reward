@@ -1,0 +1,42 @@
+{
+	"name": "creators-reward-viewer",
+	"private": true,
+	"license": "AGPL-3.0-or-later",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"test:interop": "node scripts/opaque-interop.mjs",
+		"lint": "oxlint src",
+		"lint:fix": "oxlint --fix src",
+		"knip": "knip",
+		"typecheck": "tsc --noEmit",
+		"check": "pnpm run typecheck && pnpm run lint && pnpm run knip && pnpm run test:coverage"
+	},
+	"dependencies": {
+		"@serenity-kit/opaque": "1.1.0",
+		"preact": "^10.29.8",
+		"preact-iso": "^2.12.2",
+		"preact-render-to-string": "^6.7.0"
+	},
+	"devDependencies": {
+		"@preact/preset-vite": "^2.10.6",
+		"@tailwindcss/vite": "^4.3.3",
+		"@testing-library/jest-dom": "^7.0.1",
+		"@testing-library/preact": "^3.2.4",
+		"@vitest/coverage-v8": "^5",
+		"daisyui": "^5.7.28",
+		"fake-indexeddb": "^6.2.6",
+		"jsdom": "^30.0.1",
+		"knip": "6.34.0",
+		"oxlint": "1.81.0",
+		"tailwindcss": "^4.3.3",
+		"typescript": "^7.0.2",
+		"vite": "^8.2.2",
+		"vitest": "^5.0.0"
+	}
+}

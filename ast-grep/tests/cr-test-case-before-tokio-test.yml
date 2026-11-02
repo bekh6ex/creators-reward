@@ -1,0 +1,25 @@
+id: cr-test-case-before-tokio
+valid:
+  - |
+    #[rstest]
+    #[case::a(1)]
+    #[tokio::test]
+    fn ok() {}
+  - |
+    #[tokio::test]
+    fn ok() {}
+  - |
+    #[rstest]
+    #[case::a(1)]
+    fn ok() {}
+invalid:
+  - |
+    #[rstest]
+    #[tokio::test]
+    #[case::a(1)]
+    fn bad() {}
+  - |
+    #[rstest]
+    #[tokio::test]
+    #[case]
+    fn bad() {}

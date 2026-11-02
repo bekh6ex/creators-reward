@@ -1,0 +1,62 @@
+# Pre-commit checks. prek runs this file's hooks and those of every nested prek.toml
+# (backend/, frontend/viewer/, frontend/creator/, e2e-tests/) on the staged files only;
+# a nested project's hooks run when one of its own files is staged. `prek install` installs
+# the git pre-commit hook that runs them.
+#
+#   prek run                  # staged files, as the hook does
+#   prek run --all-files      # everything
+#   prek run backend/         # one project
+#   git commit --no-verify    # bypass (WIP only)
+#
+# Only checks that finish in seconds belong here; full suites (advisories, tests,
+# coverage) stay in each project's `just check`.
+
+[[repos]]
+repo = "builtin"
+hooks = [
+  { id = "check-merge-conflict" },
+  { id = "check-added-large-files" },
+  { id = "check-toml" },
+  { id = "check-yaml" },
+]
+
+# Secret scan of the staged changes only (milliseconds); config and allowlist in
+# .gitleaks.toml. Full history: `gitleaks git --no-banner --redact .`.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "gitleaks"
+name = "gitleaks (staged changes)"
+language = "system"
+entry = "gitleaks git --pre-commit --staged --redact --no-banner"
+pass_filenames = false
+
+# Every file has a known licence and copyright (REUSE.toml, licence texts in LICENSES/).
+# Whole-repo check, about two seconds, run on every commit: a new file or a new SPDX
+# header anywhere can break it.
+[[repos.hooks]]
+id = "reuse"
+name = "reuse lint (licensing)"
+language = "system"
+entry = "reuse lint --quiet"
+pass_filenames = false
+always_run = true
+
+# Convention rules clippy and oxlint cannot express (sgconfig.yml, ast-grep/rules/, each
+# with its tests in ast-grep/tests/). Whole-repo scan, under a second.
+[[repos.hooks]]
+id = "ast-grep-test"
+name = "ast-grep rule tests"
+language = "system"
+entry = "ast-grep test --skip-snapshot-tests"
+pass_filenames = false
+files = '^(ast-grep/|sgconfig\.yml$)'
+
+[[repos.hooks]]
+id = "ast-grep-scan"
+name = "ast-grep convention scan"
+language = "system"
+entry = "ast-grep scan"
+pass_filenames = false
+files = '^(ast-grep/|sgconfig\.yml$)|\.(rs|ts|tsx)$'

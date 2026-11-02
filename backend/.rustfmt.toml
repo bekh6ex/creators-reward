@@ -1,0 +1,7 @@
+max_width=90
+
+fn_call_width=55
+attr_fn_like_width=55
+chain_width=50
+use_try_shorthand=true
+print_misformatted_file_names=true

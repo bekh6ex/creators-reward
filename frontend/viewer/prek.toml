@@ -1,0 +1,39 @@
+# Fast viewer checks for staged files; see the root prek.toml. The full gate, with the
+# coverage threshold, stays `pnpm run check`.
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "typecheck"
+name = "viewer: tsc"
+language = "system"
+entry = "pnpm exec tsc --noEmit"
+files = '\.tsx?$|^(package\.json|tsconfig.*\.json)$'
+pass_filenames = false
+
+[[repos.hooks]]
+id = "oxlint"
+name = "viewer: oxlint"
+language = "system"
+entry = "pnpm exec oxlint"
+files = '^src/.*\.(ts|tsx|js|jsx)$'
+
+[[repos.hooks]]
+id = "knip"
+name = "viewer: knip"
+language = "system"
+entry = "pnpm exec knip"
+files = '\.tsx?$|\.css$|^package\.json$'
+pass_filenames = false
+
+# Only the test files that import a staged file, directly or not.
+[[repos.hooks]]
+id = "vitest-related"
+name = "viewer: related tests"
+language = "system"
+entry = "pnpm exec vitest related --run"
+# One vitest process: prek would otherwise split many files into parallel batches,
+# each running overlapping tests, and jsdom tests then time out.
+require_serial = true
+files = '^src/.*\.tsx?$'

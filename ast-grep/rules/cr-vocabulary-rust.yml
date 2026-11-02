@@ -1,0 +1,16 @@
+id: cr-vocabulary-rust
+language: rust
+severity: error
+message: "Identifier contains forbidden vocabulary (supporter/backer/subscriber/subscription/membership)"
+note: "AGENTS.md PRODUCT INVARIANT 2 / Terminology: no supporter, backer, subscriber, subscription, or membership identifiers."
+files:
+  - backend/**/*.rs
+rule:
+  all:
+    - regex: "(?i)(supporter|backer|subscriber|subscription|membership)"
+      any:
+        - kind: identifier
+        - kind: type_identifier
+        - kind: field_identifier
+    - not:
+        regex: "^(?i)(tracing_subscriber|FmtSubscriber|subscriber|subscriber_local)$"

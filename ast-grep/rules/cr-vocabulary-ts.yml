@@ -1,0 +1,13 @@
+id: cr-vocabulary-ts
+language: ts
+severity: error
+message: "Identifier contains forbidden vocabulary (supporter/backer/subscriber/subscription/membership)"
+note: "AGENTS.md PRODUCT INVARIANT 2 / Terminology: no supporter, backer, subscriber, subscription, or membership identifiers."
+files:
+  - frontend/viewer/src/**/*.ts
+  - frontend/creator/src/**/*.ts
+rule:
+  any:
+    - kind: identifier
+    - kind: type_identifier
+  regex: "(?i)(supporter|backer|subscriber|subscription|membership)"

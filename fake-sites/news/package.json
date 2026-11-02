@@ -1,0 +1,13 @@
+{
+  "name": "fake-news-site",
+  "version": "1.0.0",
+  "description": "Fake news site for testing",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@picocss/pico": "^2.0.6"
+  }
+}

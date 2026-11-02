@@ -1,0 +1,107 @@
+[package]
+name = "backend"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+members = [
+    "common",
+    "tagged_id",
+    "services/auth",
+    "services/id_storage",
+    "services/billing",
+    "services/creator",
+    "services/web_viewer_events",
+    "tools/billing_ceremony",
+]
+
+[workspace.package]
+license = "AGPL-3.0-or-later"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unreachable_pub = "warn"
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+float_arithmetic = "warn"
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+unwrap_used = "warn"
+expect_used = "warn"
+arithmetic_side_effects = "warn"
+todo = "warn"
+significant_drop_tightening = "warn"
+
+[workspace.dependencies]
+common = { path = "common" }
+id_storage = { path = "services/id_storage" }
+billing = { path = "services/billing" }
+web_viewer_events = { path = "services/web_viewer_events" }
+
+base64 = "0.21.4"
+futures = "0.3.28"
+googletest = "0.14.4"
+hpke = { version = "0.15", default-features = false, features = ["alloc", "getrandom", "x25519", "aes"] }
+# Pinned to opaque-ke 4.0.x because the viewer SPA uses @serenity-kit/opaque 1.1.0,
+# which is built against opaque-ke 4.0.0; client and server must share the same
+# OPAQUE protocol version.
+opaque-ke = { version = "=4.0.1", features = ["argon2", "ristretto255", "serde"] }
+ed25519-dalek = { version = "2.0.0", default-features = false, features = ["rand_core", "pkcs8"] }
+rand = "0.8.5"
+rstest = { version = "0.28.0", default-features = false, features = ["async-timeout"] }
+secrecy = "0.10.3"
+serde = { version = "1.0.188", features = ["derive"] }
+serde_json = "1.0.107"
+sha2 = "0.10.8"
+thiserror = "1.0.41"
+time = "0.3.55"
+tokio = "1.0"
+tracing = "0.1.39"
+uuid = "1.4.1"
+
+[dependencies]
+common = { workspace = true }
+auth = { path = "services/auth" }
+id_storage = { workspace = true }
+billing = { workspace = true }
+creator = { path = "services/creator" }
+web_viewer_events = { workspace = true }
+
+futures = { workspace = true }
+axum = { version = "0.8.9" }
+axum-server = { version = "0.8.0", features = ["tls-rustls"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tower = { version = "0.5.3", features = ["full"] }
+tower-http = { version = "0.7.1", features = ["full"] }
+tower-cookies = "0.11.0"
+base64 = { workspace = true }
+rand = { workspace = true }
+ed25519-dalek = { workspace = true }
+askama = { version = "0.16.1", default-features = false, features = ["derive", "std"] }
+secrecy = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+googletest = { workspace = true }
+axum-test = "21.1.0"
+billing_ceremony = { path = "tools/billing_ceremony" }
+tokio-test = "0.4.1"
+opaque-ke = { workspace = true }
+
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+overflow-checks = true
+
+[lints]
+workspace = true

@@ -1,0 +1,51 @@
+id: cr-serde-camelcase
+language: rust
+severity: error
+message: "Structs/enums deriving Serialize/Deserialize need #[serde(rename_all = \"camelCase\")]"
+note: |
+  AGENTS.md CONVENTIONS: serde DTO fields are camelCase to match the TS clients.
+  Not flagged: structs without named fields (unit, tuple, #[serde(transparent)] newtypes,
+  `{}`) and unit-only enums. A wire format whose names are fixed elsewhere (JWT claims)
+  takes `// ast-grep-ignore: cr-serde-camelcase` on the line above the item, with the
+  reason on the line above that.
+files:
+  - backend/**/*.rs
+rule:
+  any:
+    - kind: struct_item
+    - kind: enum_item
+  # An item's own attributes are the attribute_item siblings right before it (comments
+  # may sit between them); the search stops at the first other node, the previous item.
+  follows:
+    stopBy:
+      not:
+        any:
+          - kind: attribute_item
+          - kind: line_comment
+    kind: attribute_item
+    regex: "^#\\[derive\\([^)]*\\b(Serialize|Deserialize)\\b"
+  not:
+    any:
+      - follows:
+          stopBy:
+            not:
+              any:
+                - kind: attribute_item
+                - kind: line_comment
+          kind: attribute_item
+          regex: "^#\\[serde\\([^)]*(rename_all\\s*=\\s*\"camelCase\"|\\btransparent\\b)"
+      - all:
+          - kind: struct_item
+          - not:
+              has:
+                kind: field_declaration_list
+                has:
+                  kind: field_declaration
+      - all:
+          - kind: enum_item
+          - not:
+              has:
+                stopBy: end
+                any:
+                  - kind: ordered_field_declaration_list
+                  - kind: field_declaration_list

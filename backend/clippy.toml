@@ -1,0 +1,19 @@
+# Product invariants as clippy rules: backend/AGENTS.md → STATIC ANALYSIS. Each allowed use
+# carries #[expect(clippy::disallowed_*, reason = "...")] saying why it is fine there.
+# `allow-invalid`: the path need not resolve, since not every member depends on the crate.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+disallowed-methods = [
+  { path = "secrecy::ExposeSecret::expose_secret", reason = "a secret leaves its wrapper: say why it is safe here", allow-invalid = true },
+  { path = "std::time::SystemTime::now", reason = "clock read: timestamps that reach storage are rounded to 15 minutes (README), and timing can correlate a reader (invariant 2)" },
+  { path = "std::time::Instant::now", reason = "clock read: timing can correlate a reader (invariant 2); say what the time is used for" },
+  { path = "chrono::Utc::now", reason = "clock read: timestamps that reach storage are rounded to 15 minutes (README), and timing can correlate a reader (invariant 2)", allow-invalid = true },
+  { path = "time::OffsetDateTime::now_utc", reason = "clock read: timestamps that reach storage are rounded to 15 minutes (README), and timing can correlate a reader (invariant 2)", allow-invalid = true },
+  { path = "jsonwebtoken::EncodingKey::from_rsa_der", reason = "the token is EdDSA only; jsonwebtoken's rust_crypto backend compiles in rsa 0.9 (RUSTSEC-2023-0071, no fix) and this rule keeps that code unreachable", allow-invalid = true },
+  { path = "jsonwebtoken::DecodingKey::from_rsa_components", reason = "the token is EdDSA only; jsonwebtoken's rust_crypto backend compiles in rsa 0.9 (RUSTSEC-2023-0071, no fix) and this rule keeps that code unreachable", allow-invalid = true },
+  { path = "jsonwebtoken::DecodingKey::from_rsa_raw_components", reason = "the token is EdDSA only; jsonwebtoken's rust_crypto backend compiles in rsa 0.9 (RUSTSEC-2023-0071, no fix) and this rule keeps that code unreachable", allow-invalid = true },
+  { path = "jsonwebtoken::DecodingKey::from_rsa_der", reason = "the token is EdDSA only; jsonwebtoken's rust_crypto backend compiles in rsa 0.9 (RUSTSEC-2023-0071, no fix) and this rule keeps that code unreachable", allow-invalid = true },
+]
+disallowed-types = [
+  { path = "id_storage::internal_api::ViewerIdSet", reason = "never leak ViewerIdSet across services: translate ids through IdExchanger", allow-invalid = true },
+]

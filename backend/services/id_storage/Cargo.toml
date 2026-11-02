@@ -1,0 +1,19 @@
+[package]
+name = "id_storage"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+[dependencies]
+common = { workspace = true }
+futures = { workspace = true }
+async-trait = "0.1.73"
+getset = "0.1.2"
+serde = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+googletest = { workspace = true }
+
+[lints]
+workspace = true

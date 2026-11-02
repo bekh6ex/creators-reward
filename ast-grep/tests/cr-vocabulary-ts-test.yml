@@ -1,0 +1,17 @@
+id: cr-vocabulary-ts
+valid:
+  - |
+    function normal() {}
+    // subscriber allowed in comment
+    const x = "subscriber in string";
+invalid:
+  - |
+    function supporterFn() {}
+  - |
+    const subscriptionCount = 0;
+  - |
+    const backerList: string[] = [];
+  - |
+    interface SubscriberInfo {}
+  - |
+    type MembershipCard = {};

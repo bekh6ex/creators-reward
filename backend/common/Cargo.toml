@@ -1,0 +1,22 @@
+[package]
+name = "common"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tagged_id = {path = "../tagged_id"}
+uuid = { workspace = true, features = ["v4", "serde"]}
+bytes = "1.4.0"
+serde = { workspace = true }
+futures = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+googletest = { workspace = true }
+
+[lints]
+workspace = true

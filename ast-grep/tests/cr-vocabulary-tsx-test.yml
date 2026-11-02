@@ -1,0 +1,11 @@
+id: cr-vocabulary-tsx
+valid:
+  - |
+    function normal() { return <div>supporter in JSX text</div>; }
+invalid:
+  - |
+    function SupporterComponent() { return <div />; }
+  - |
+    const subscriptionCount = 0;
+  - |
+    function BackerList() { return null; }

@@ -1,0 +1,61 @@
+# cargo-deny configuration for the Rust backend.
+# See backend/AGENTS.md → STATIC ANALYSIS for rationale.
+
+[graph]
+# Check the graph as cargo resolves it by default.
+all-features = false
+
+[advisories]
+# Each ignored advisory notes the dependency that pulls it in, whether it is
+# dev-only, and why it cannot be fixed yet.
+ignore = [
+    { id = "RUSTSEC-2026-0387", reason = "crypto-bigint 0.5.5 via elliptic-curve 0.13.8, pulled in by opaque-ke 4.0.1 / voprf 0.5.0 and by jsonwebtoken 11.1.0 (p256/p384); non-dev. Not reachable: the OPAQUE suite is ristretto255 (curve25519-dalek), whose only elliptic-curve use is hash2curve::ExpandMsgXmd (digest only), and jsonwebtoken runs EdDSA only. Fixed in crypto-bigint 0.7.6, which needs elliptic-curve 0.14; no stable opaque-ke or voprf release (prereleases included) moves to it." },
+    { id = "RUSTSEC-2023-0071", reason = "rsa 0.9.10 via jsonwebtoken 11.1.0 (non-dev, rust_crypto feature); no fixed release; the token uses EdDSA only, Validation accepts only EdDSA, and backend/clippy.toml disallows jsonwebtoken's RSA key constructors, so no RSA operation runs." },
+]
+
+[licenses]
+# Licences a dependency may use: permissive ones whose terms AGPL-3.0-or-later can
+# carry, plus AGPL itself. Anything else fails the check, so a new licence is a
+# decision, not an accident.
+allow = [
+    "AGPL-3.0-or-later",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "CDLA-Permissive-2.0", # webpki-roots: Mozilla's root certificate list
+    "ISC",
+    "MIT",
+    "Unicode-3.0",
+    "Zlib",
+]
+
+[bans]
+# Duplicate crate versions are worth knowing about, but many come from old
+# major-version stacks that will be upgraded together.
+multiple-versions = "warn"
+
+# Restrict which workspace crates may directly depend on sensitive internal crates.
+deny = [
+    # billing is only allowed directly under backend and the offline ceremony tool.
+    # This keeps the event-ingest side (web_viewer_events) amount-blind — PRODUCT INVARIANT 3.
+    { crate = "billing", wrappers = ["backend", "billing_ceremony"], reason = "billing is only allowed directly under backend and billing_ceremony to keep the event-ingest side amount-blind (PRODUCT INVARIANT 3)" },
+
+    # id_storage is only allowed directly under the services that exchange ids.
+    # This keeps ViewerIdSet / IdStorage reachable only by the services that
+    # need to translate ids.
+    { crate = "id_storage", wrappers = ["backend", "auth", "billing"], reason = "id_storage is only allowed directly under backend, auth, and billing to keep ViewerIdSet/IdStorage inside the id-exchange boundary" },
+]
+
+# Dependencies used by two or more workspace members must be declared in
+# [workspace.dependencies] (path dependencies are included). Unused workspace
+# entries are also errors.
+[bans.workspace-dependencies]
+duplicates = "deny"
+unused = "deny"
+include-path-dependencies = true
+
+[sources]
+# Only crates.io is allowed. Unknown registries or git sources fail the check.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

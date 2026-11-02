@@ -1,0 +1,31 @@
+{
+  "name": "creators-reward-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-end tests for the Creator's Reward viewer",
+  "private": true,
+  "scripts": {
+    "test": "bddgen -c playwright.bdd.config.ts && playwright test -c playwright.bdd.config.ts",
+    "test:headed": "bddgen -c playwright.bdd.config.ts && playwright test -c playwright.bdd.config.ts --headed",
+    "test:debug": "bddgen -c playwright.bdd.config.ts && playwright test -c playwright.bdd.config.ts --debug",
+    "test:ui": "bddgen -c playwright.bdd.config.ts && playwright test -c playwright.bdd.config.ts --ui",
+    "test:report": "playwright show-report",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "qa": "tsc --noEmit && pnpm run format && bddgen -c playwright.bdd.config.ts"
+  },
+  "keywords": [
+    "e2e",
+    "playwright",
+    "bdd",
+    "gherkin"
+  ],
+  "author": "",
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "@types/node": "^20.11.0",
+    "playwright-bdd": "8.5.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.4.5"
+  }
+}

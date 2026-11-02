@@ -1,0 +1,41 @@
+# E2E test recipes.
+
+[private]
+default:
+    @just --list
+
+# Install dependencies.
+install:
+    pnpm install
+
+# Generate and run all BDD scenarios (headless).
+test:
+    pnpm test
+
+# Run scenarios in headed mode.
+test-headed:
+    pnpm run test:headed
+
+# Run with the Playwright inspector.
+test-debug:
+    pnpm run test:debug
+
+# Run in Playwright UI mode.
+test-ui:
+    pnpm run test:ui
+
+# Open the last HTML report.
+test-report:
+    pnpm run test:report
+
+# Format-check with prettier.
+format:
+    pnpm run format
+
+# Auto-format with prettier.
+format-fix:
+    pnpm run format:fix
+
+# Quality gate: typecheck + prettier + bddgen wiring.
+qa:
+    pnpm run qa

@@ -1,0 +1,55 @@
+# gitleaks secret scanning. Run via prek on staged changes (root prek.toml),
+# and over everything with:
+#   gitleaks git --no-banner --redact .     # full history
+#   gitleaks dir --no-banner --redact .     # working tree
+#
+# Every entry below is a known, intentional finding and says why it is harmless. A finding
+# that is not dev/test material is a real leak: rotate it, never allowlist it.
+
+title = "creators-reward"
+
+[extend]
+useDefault = true
+
+# --- Untracked build and dependency output ---------------------------------------------
+# `gitleaks dir .` walks the disk, not the index, so it also reads these gitignored
+# directories (backend/target alone is tens of GB). Nothing here is committed; `gitleaks
+# git` and the staged-changes hook never see them.
+[[allowlists]]
+description = "Gitignored build, dependency and dev-state directories (see .gitignore)"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)target/''',
+  '''(^|/)\.pnpm-store/''',
+  '''(^|/)\.vite-node/''',
+  '''^dev/\.state/''',
+  '''^dev/cert/''',
+  '''^backend/cert/''',
+]
+
+# --- Test fixtures (generic-api-key) ----------------------------------------------------
+# Fixed values that tests need to be deterministic. Each is pinned to its file and to the
+# exact value, so a different string in the same file is still reported.
+[[allowlists]]
+description = "viewer test fixture: X25519 PKCS#8 private key of hpkeFixture.ts, generated for the test only"
+condition = "AND"
+paths = ['''^frontend/viewer/src/test/hpkeFixture\.ts$''']
+regexes = ['''MC4CAQAwBQYDK2VuBCIEIIDkINkOhzTATBvE8f_u5zLkabRrBf4LCzKax2ShyCZL''']
+
+[[allowlists]]
+description = "viewer test fixture: fake OPAQUE export keys in viewerKeys.test.ts (base64 of an English sentence)"
+condition = "AND"
+paths = ['''^frontend/viewer/src/viewerKeys\.test\.ts$''']
+regexes = [
+  '''c2VjcmV0LWV4cG9ydC1rZXktZnJvbS1vcGFxdWUtNjQtYnl0ZXMtbG9uZy0xMjM0NTY3ODkw''',
+  '''b3RoZXItZXhwb3J0LWtleS1mcm9tLW9wYXF1ZS02NC1ieXRlcy1sb25nLTEyMzQ1Njc4OTA''',
+]
+
+[[allowlists]]
+description = "creator test fixtures: fake site-verification tokens (crv-<hex>) of the mocked creator API"
+condition = "AND"
+paths = [
+  '''^frontend/creator/src/test/fixtures\.ts$''',
+  '''^frontend/creator/src/pages/AddWebsite/AddWebsite\.test\.tsx$''',
+]
+regexes = ['''crv-[0-9a-f]+''']

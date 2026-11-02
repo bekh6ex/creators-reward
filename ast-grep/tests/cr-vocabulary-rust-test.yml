@@ -1,0 +1,18 @@
+id: cr-vocabulary-rust
+valid:
+  - |
+    fn normal_fn() {}
+    // supporter is allowed in comments
+invalid:
+  - |
+    fn supporter_fn() {}
+  - |
+    struct BackerList;
+  - |
+    enum Foo {
+        SubscriberVariant,
+    }
+  - |
+    const subscription_count: i32 = 0;
+  - |
+    fn membership_card() {}

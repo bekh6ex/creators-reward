@@ -1,0 +1,57 @@
+# Viewer SPA recipes.
+
+[private]
+default:
+    @just --list
+
+# Install dependencies.
+install:
+    pnpm install
+
+# Start the Vite dev server.
+dev:
+    pnpm run dev
+
+# Build for production.
+build:
+    pnpm run build
+
+# Preview the production build.
+preview:
+    pnpm run preview
+
+# Run Vitest once.
+test:
+    pnpm test
+
+# Run Vitest in watch mode.
+test-watch:
+    pnpm run test:watch
+
+# Run Vitest with coverage (enforces 85%).
+test-coverage:
+    pnpm run test:coverage
+
+# Run the OPAQUE interop script.
+test-interop:
+    pnpm run test:interop
+
+# Run oxlint.
+lint:
+    pnpm run lint
+
+# Run oxlint and apply safe fixes.
+lint-fix:
+    pnpm run lint:fix
+
+# Find unused files / exports / dependencies.
+knip:
+    pnpm run knip
+
+# Type-check with tsc --noEmit.
+typecheck:
+    pnpm run typecheck
+
+# Full viewer gate: typecheck + lint + knip + coverage tests.
+check:
+    pnpm run check

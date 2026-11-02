@@ -1,0 +1,20 @@
+# Fast e2e-test checks for staged files; see the root prek.toml. Running the scenarios
+# needs the dev stack, so it is not a commit check.
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "typecheck"
+name = "e2e: tsc"
+language = "system"
+entry = "pnpm exec tsc --noEmit"
+files = '\.ts$|^(package\.json|tsconfig\.json)$'
+pass_filenames = false
+
+[[repos.hooks]]
+id = "prettier"
+name = "e2e: prettier"
+language = "system"
+entry = "pnpm exec prettier --check --ignore-unknown"
+types = ["text"]

@@ -1,0 +1,42 @@
+# Fast backend checks for staged files; see the root prek.toml. The full gate is
+# `just check` in this directory (or `just backend::check` from the root).
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "cargo-fmt"
+name = "cargo fmt"
+language = "system"
+entry = "cargo fmt --all --check"
+types = ["rust"]
+pass_filenames = false
+
+# Also enforces the invariant rules of clippy.toml and their #[expect] reasons.
+# Incremental: about 0.4-2.6 s depending on how deep in the crate graph the change is.
+[[repos.hooks]]
+id = "cargo-clippy"
+name = "cargo clippy"
+language = "system"
+entry = "cargo clippy --workspace --all-targets -- -D warnings"
+files = '\.rs$|(^|/)Cargo\.(toml|lock)$|^clippy\.toml$'
+pass_filenames = false
+
+# Crate graph: bans, licenses and sources in the hook. Advisories need network and
+# can change without any commit, so they stay in `just backend::check`.
+[[repos.hooks]]
+id = "cargo-deny"
+name = "cargo deny bans/licenses/sources"
+language = "system"
+entry = "cargo deny check bans licenses sources"
+files = '(^|/)Cargo\.(toml|lock)$|^deny\.toml$'
+pass_filenames = false
+
+# Unused and misplaced dependencies; a source change can make a dependency unused.
+[[repos.hooks]]
+id = "cargo-shear"
+name = "cargo shear"
+language = "system"
+entry = "cargo shear"
+files = '\.rs$|(^|/)Cargo\.(toml|lock)$'
+pass_filenames = false

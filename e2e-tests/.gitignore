@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Test results
+test-results/
+playwright-report/
+playwright/.cache/
+
+# playwright-bdd generated test files
+.features-gen/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log

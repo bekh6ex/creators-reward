@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Creators Reward</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 6px 10px;
+            font: 14px sans-serif;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #status {
+            color: #888;
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body>
+<button id="enable-donations" disabled>Enable donations</button>
+<button id="hide-btn" title="Ask the page to hide this iframe">&times;</button>
+<span id="status">waiting for events...</span>
+
+<script type="module">
+    import {seal} from "./hpke.js";
+
+    // "Enable donations" is real: the record is sealed here, in the browser,
+    // to the viewer's public key, so the site never reaches the server. So is
+    // billing: every page view on a site with donations enabled is sealed here
+    // to the billing period's key, which only the key holders can open, and
+    // only to sum it per site. The page-event beacon and the partitioned token
+    // copy are still stubbed.
+    //
+    // INVARIANT 2: the host page must not be able to tell whether donations
+    // are enabled. It cannot read this frame, so the enabled state may only
+    // change what is drawn inside it - never the frame's size, the messages
+    // sent to the parent, or anything else the parent can observe.
+
+    // Events the main page may trigger through postMessage. Deliberately does
+    // NOT include enabling donations: that must come from this iframe's own
+    // button, so a compromised host page cannot enable donations via the
+    // postMessage channel.
+    const HOST_TRIGGERABLE_EVENTS = new Set(["MainPageButton"]);
+
+    const INFO = new TextEncoder().encode("creators-reward/v1/enabled-donation");
+    // Must match web_viewer_events::enabled_donations::PADDED_LEN; the server
+    // rejects records of any other length.
+    const PADDED_LEN = 256;
+    const TIMESTAMP_PRECISION_SEC = 15 * 60;
+    // Must match billing::ceremony_format: the period id completes the info,
+    // binding each billing record to its period. Same padded length.
+    const USAGE_INFO_PREFIX = "creators-reward/v1/billing-usage/";
+
+    const button = document.getElementById("enable-donations");
+
+    // The site this frame is embedded in, from the origin the browser attaches
+    // to the parent's postMessage - attested, so the parent cannot claim to be
+    // another site. Not from document.referrer: embed.js loads this frame with
+    // referrerpolicy=no-referrer, so the server never learns the site either.
+    let site = null;
+    // Id of this site's enabled-donation record, or null when not enabled.
+    let recordId = null;
+    // One unit of reading per page view (where the decision of what counts
+    // as reading belongs is still open).
+    let pageViewCounted = false;
+
+    class PageEvent {
+        constructor(name, date, url) {
+            this.name = name;
+            this.date = date;
+            this.url = url;
+        }
+    }
+
+    function status(text) {
+        console.log("iframe status:", text);
+        document.getElementById("status").textContent = text;
+    }
+
+    function toBase64Url(bytes) {
+        let binary = "";
+        for (const byte of bytes) binary += String.fromCharCode(byte);
+        return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+    }
+
+    function fromBase64Url(text) {
+        const base64 = text.replaceAll("-", "+").replaceAll("_", "/");
+        const binary = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "="));
+        return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    }
+
+    // This frame's storage is partitioned by the top-level site, so it is a
+    // per-site slot. The key still names the site, so it stays correct where
+    // a browser unpartitions storage after requestStorageAccess.
+    function storageKey() {
+        return "enabled-donation:" + site;
+    }
+
+    function rememberRecord(id) {
+        recordId = id;
+        try {
+            if (id) localStorage.setItem(storageKey(), id);
+            else localStorage.removeItem(storageKey());
+        } catch (err) {
+            console.log("storage unavailable, record id kept for this page only:", err);
+        }
+    }
+
+    function showState() {
+        button.textContent = recordId ? "Disable donations" : "Enable donations";
+        button.disabled = site === null;
+    }
+
+    function sendToServer(pageEvent) {
+        // Only sites the viewer enabled donations for are collected, and each
+        // event will carry the record id, which the server checks: deleting
+        // the record stops collection. TODO: send via navigator.sendBeacon
+        // once an endpoint accepting page events exists.
+        if (!recordId) {
+            console.log("PageEvent dropped, donations not enabled:", pageEvent.name);
+            return;
+        }
+        console.log("PageEvent (not sent, endpoint pending):", pageEvent, recordId);
+        status("event: " + JSON.stringify(pageEvent));
+    }
+
+    async function loadState() {
+        let stored = null;
+        try {
+            stored = localStorage.getItem(storageKey());
+        } catch (err) {
+            console.log("storage unavailable:", err);
+        }
+        if (stored) {
+            // The viewer may have disabled donations from their Enabled
+            // donations page; the record is then gone.
+            const resp = await fetch("enabled-donations/" + encodeURIComponent(stored), {
+                credentials: "same-origin",
+            });
+            if (resp.status === 204) recordId = stored;
+            else if (resp.status === 404) rememberRecord(null);
+        }
+        showState();
+        status(recordId ? "donations enabled for this site" : "ready");
+        await countPageView();
+    }
+
+    async function countPageView() {
+        if (!recordId || pageViewCounted) return;
+        pageViewCounted = true;
+        // No cookie: the key is the same for every reader, and the server
+        // cannot hand out a per-reader key without knowing who asks.
+        const keyResp = await fetch("../../billing/period-key", {credentials: "omit"});
+        if (!keyResp.ok) {
+            console.log("page view not counted, no billing period key:", keyResp.status);
+            return;
+        }
+        const {period, publicKey} = await keyResp.json();
+        const info = new TextEncoder().encode(USAGE_INFO_PREFIX + period);
+        const sealed = await seal(fromBase64Url(publicKey), padded({site}), info);
+        const resp = await fetch("usage", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            credentials: "same-origin",
+            body: JSON.stringify({
+                enabledDonationId: recordId,
+                period,
+                sealed: toBase64Url(sealed),
+            }),
+        });
+        if (resp.status !== 202) console.log("page view not counted:", resp.status);
+    }
+
+    // The embedder is arbitrary, so there is no origin to pin: gate by WINDOW
+    // IDENTITY instead - only the direct parent may talk to this frame.
+    window.addEventListener("message", (event) => {
+        if (event.source !== window.parent) {
+            console.log("Ignored message from non-parent window:", event.origin, event.data);
+            return;
+        }
+        const data = event.data || {};
+        if (data.cmd === "site") {
+            if (site === null && event.origin !== "null") {
+                site = event.origin;
+                loadState().catch((err) => {
+                    console.log("loading state failed:", err);
+                    showState();
+                });
+            }
+            return;
+        }
+        if (!HOST_TRIGGERABLE_EVENTS.has(data.name)) {
+            console.log("Rejected page-triggered event:", data.name);
+            status("rejected page event: " + data.name);
+            return;
+        }
+        sendToServer(new PageEvent(data.name, data.date, data.url));
+    });
+
+    // Storage Access API: the button click is the user gesture the API needs to
+    // restore the unpartitioned cookie under third-party-cookie blocking.
+    async function requestStorageAccessIfNeeded() {
+        try {
+            if (!document.requestStorageAccess) return;
+            if (document.hasStorageAccess && (await document.hasStorageAccess())) return;
+            await document.requestStorageAccess();
+            status("storage access granted");
+        } catch (err) {
+            console.log("storage access denied:", err);
+            status("storage access DENIED - event may lack the token");
+        }
+    }
+
+    function padded(value) {
+        const bytes = new TextEncoder().encode(JSON.stringify(value));
+        if (bytes.length > PADDED_LEN) throw new Error("site origin too long");
+        // Space padding: JSON parsers ignore trailing whitespace.
+        const out = new Uint8Array(PADDED_LEN).fill(0x20);
+        out.set(bytes);
+        return out;
+    }
+
+    async function enableDonations() {
+        const keyResp = await fetch("public-key", {credentials: "same-origin"});
+        if (keyResp.status === 401) return status("log in to Creators Reward first");
+        if (!keyResp.ok) return status("enabling donations failed: " + keyResp.status);
+        const {publicKey} = await keyResp.json();
+
+        const now = Math.floor(Date.now() / 1000);
+        const enabledAtSec = now - (now % TIMESTAMP_PRECISION_SEC);
+        const sealed = await seal(fromBase64Url(publicKey), padded({site, enabledAtSec}), INFO);
+        const resp = await fetch("enabled-donations", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            credentials: "same-origin",
+            body: JSON.stringify({sealed: toBase64Url(sealed)}),
+        });
+        if (resp.status !== 201) return status("enabling donations failed: " + resp.status);
+        rememberRecord((await resp.json()).id);
+        status("donations enabled for this site");
+        await countPageView();
+    }
+
+    async function disableDonations() {
+        const resp = await fetch("enabled-donations/" + encodeURIComponent(recordId), {
+            method: "DELETE",
+            credentials: "same-origin",
+        });
+        if (resp.status === 401) return status("log in to Creators Reward first");
+        if (resp.status !== 204) return status("disabling donations failed: " + resp.status);
+        rememberRecord(null);
+        status("donations disabled for this site");
+    }
+
+    // Enabling donations is the viewer's explicit statement of trust in this
+    // site, so it must be impossible to trigger from script: isTrusted is false
+    // for any synthetic click, and transient activation proves a real, recent
+    // gesture. Clickjacking is not covered by this.
+    button.addEventListener("click", async (clickEvent) => {
+        const activated = navigator.userActivation ? navigator.userActivation.isActive : true;
+        if (!clickEvent.isTrusted || !activated) {
+            console.log("Ignored synthetic click. isTrusted:", clickEvent.isTrusted, "activation:", activated);
+            status("ignored: needs a real user click");
+            return;
+        }
+        if (site === null) return;
+        button.disabled = true;
+        try {
+            await requestStorageAccessIfNeeded();
+            if (recordId) await disableDonations();
+            else await enableDonations();
+        } catch (err) {
+            console.log("enable/disable donations failed:", err);
+            status("request failed");
+        } finally {
+            showState();
+        }
+    });
+
+    // Ask the parent page to hide this iframe. "*" is safe: the payload
+    // carries nothing sensitive, and the parent validates by window identity.
+    document.getElementById("hide-btn").addEventListener("click", () => {
+        window.parent.postMessage({ cmd: "hide" }, "*");
+        status("asked the page to hide me");
+    });
+</script>
+</body>
+</html>

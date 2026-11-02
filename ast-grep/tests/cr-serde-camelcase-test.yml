@@ -1,0 +1,70 @@
+id: cr-serde-camelcase
+valid:
+  - |
+    #[derive(Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct HasCamelCase {
+        field_name: i32,
+    }
+  - |
+    #[serde(rename_all = "camelCase")]
+    #[derive(Debug, Serialize)]
+    struct SerdeAttributeFirst {
+        field_name: i32,
+    }
+  - |
+    #[derive(Serialize, Deserialize)]
+    #[serde(transparent)]
+    struct Newtype(u64);
+  - |
+    #[derive(Serialize, Deserialize)]
+    struct Empty {}
+  - |
+    #[derive(Serialize, Deserialize)]
+    pub struct PubUnit;
+  - |
+    #[derive(Serialize, Deserialize)]
+    enum UnitOnly {
+        A,
+        B,
+    }
+  - |
+    #[derive(Debug)]
+    struct NotSerde {
+        field_name: i32,
+    }
+  - |
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct First {
+        a_b: i32,
+    }
+
+    #[derive(Debug)]
+    struct SecondIsNotSerde {
+        c_d: i32,
+    }
+invalid:
+  - |
+    #[derive(Serialize, Deserialize)]
+    struct Missing {
+        field_name: i32,
+    }
+  - |
+    #[derive(Serialize)]
+    #[serde(deny_unknown_fields)]
+    struct OtherSerdeAttributeOnly {
+        field_name: i32,
+    }
+  - |
+    #[derive(Serialize)]
+    #[derive(Debug)]
+    pub struct DeriveNotAdjacent {
+        field_name: i32,
+    }
+  - |
+    #[derive(Serialize, Deserialize)]
+    #[serde(rename_all = "snake_case")]
+    enum WrongCase {
+        VariantA { field_name: i32 },
+    }

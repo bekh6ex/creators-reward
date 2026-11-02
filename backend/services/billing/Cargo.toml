@@ -1,0 +1,29 @@
+[package]
+name = "billing"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# No cryptography here on purpose: the server only stores and shuffles sealed
+# records. Opening them is the offline ceremony's job (tools/billing_ceremony).
+[dependencies]
+common = { workspace = true }
+id_storage = { workspace = true }
+base64 = { workspace = true }
+futures = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+time = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+googletest = { workspace = true }
+
+[lints]
+workspace = true

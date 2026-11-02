@@ -1,0 +1,26 @@
+# Licensing of every file in the repository, in the REUSE format (https://reuse.software).
+# Licence texts live in LICENSES/; the human-readable mapping is README.md → License.
+# When several annotations match a file, the last one wins, so the list runs from the
+# default to the exceptions. Check: `reuse lint` (also a prek hook).
+version = 1
+SPDX-PackageName = "creators-reward"
+SPDX-PackageDownloadLocation = "https://github.com/bekh6ex/creators-reward"
+
+# Default: the code, configuration and everything not listed below.
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "2023 The creators-reward contributors"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# Documentation.
+[[annotations]]
+path = "**/*.md"
+SPDX-FileCopyrightText = "2023 The creators-reward contributors"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+# What a creator puts on their own site: the embed loader. Permissive, so nothing
+# reaches their code.
+[[annotations]]
+path = "backend/templates/events/web/embed.js"
+SPDX-FileCopyrightText = "2023 The creators-reward contributors"
+SPDX-License-Identifier = "MIT"

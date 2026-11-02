@@ -1,0 +1,17 @@
+id: cr-test-gtest-above-rstest
+valid:
+  - |
+    #[gtest]
+    #[rstest]
+    fn ok() {}
+  - |
+    #[rstest]
+    fn ok() {}
+  - |
+    #[gtest]
+    fn ok() {}
+invalid:
+  - |
+    #[rstest]
+    #[gtest]
+    fn bad() {}

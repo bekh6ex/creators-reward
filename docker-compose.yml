@@ -1,0 +1,181 @@
+# =============================================================================
+# PARTIALLY VERIFIED — built and run once for real (2026-09)
+#
+# Confirmed working: images build, all services start, caddy + backend (via
+# cargo-watch) stop on SIGTERM, `down` completes. Fixed after that first run:
+# node/sh services ignored SIGTERM (PID 1 ignores default-disposition signals)
+# — `init: true` now puts tini in front of every service.
+#
+# Still unverified by execution: live reload across the bind mounts, HMR over
+# the TLS proxy, and the SSH port-forward path.
+# =============================================================================
+
+# init: true on every service: tini becomes PID 1, forwards SIGTERM to the
+# command, and reaps orphans. Without it, the `sh -c "… && …"` / node commands
+# ignore SIGTERM (kernel rule: PID 1 only gets signals it handles explicitly)
+# and every `docker compose down` falls back to SIGKILL after the 10 s grace.
+
+services:
+  backend:
+    init: true
+    build:
+      context: .
+      dockerfile: dev/docker/backend.Dockerfile
+    volumes:
+      - ./backend:/app
+      - backend-target:/app/target
+    environment:
+      CR_PORT: "18080"
+      CR_BIND_ADDR: "0.0.0.0"
+      CR_BACKEND_PORT: "8000"
+      CR_VIEWER_PORT: "5173"
+      CR_CREATOR_PORT: "5174"
+      CR_SITE1_PORT: "8081"
+      CR_SITE2_PORT: "8082"
+      CR_VIEWER_HOST: "app.crlocal"
+      CR_CREATOR_HOST: "creator.crlocal"
+      # Creator service listener; Caddy sends creator.crlocal/api/* here.
+      CR_CREATOR_API_PORT: "8002"
+    working_dir: /app
+    command: ["cargo", "watch", "-w", "src", "-w", "services", "-w", "common", "-w", "templates", "-x", "run"]
+
+  viewer:
+    init: true
+    build:
+      context: .
+      dockerfile: dev/docker/viewer.Dockerfile
+    volumes:
+      - ./frontend/viewer:/app
+      - viewer-node_modules:/app/node_modules
+    environment:
+      CR_PORT: "18080"
+      CR_BIND_ADDR: "0.0.0.0"
+      CR_BACKEND_PORT: "8000"
+      CR_VIEWER_PORT: "5173"
+      CR_CREATOR_PORT: "5174"
+      CR_SITE1_PORT: "8081"
+      CR_SITE2_PORT: "8082"
+      CR_VIEWER_HOST: "app.crlocal"
+      CR_CREATOR_HOST: "creator.crlocal"
+    working_dir: /app
+    command: >
+      sh -c '
+      current=$$(sha256sum pnpm-lock.yaml 2>/dev/null | cut -d" " -f1);
+      cached=$$(cat node_modules/.lock-hash 2>/dev/null || true);
+      if [ "$$current" != "$$cached" ]; then
+        pnpm install --frozen-lockfile && echo "$$current" > node_modules/.lock-hash;
+      fi;
+      pnpm run dev
+      '
+
+  creator:
+    init: true
+    build:
+      context: .
+      dockerfile: dev/docker/creator.Dockerfile
+    volumes:
+      - ./frontend/creator:/app
+      - creator-node_modules:/app/node_modules
+    environment:
+      CR_PORT: "18080"
+      CR_BIND_ADDR: "0.0.0.0"
+      CR_BACKEND_PORT: "8000"
+      CR_VIEWER_PORT: "5173"
+      CR_CREATOR_PORT: "5174"
+      CR_SITE1_PORT: "8081"
+      CR_SITE2_PORT: "8082"
+      CR_VIEWER_HOST: "app.crlocal"
+      CR_CREATOR_HOST: "creator.crlocal"
+    working_dir: /app
+    command: >
+      sh -c '
+      current=$$(sha256sum pnpm-lock.yaml 2>/dev/null | cut -d" " -f1);
+      cached=$$(cat node_modules/.lock-hash 2>/dev/null || true);
+      if [ "$$current" != "$$cached" ]; then
+        pnpm install --frozen-lockfile && echo "$$current" > node_modules/.lock-hash;
+      fi;
+      pnpm run dev
+      '
+
+  site1:
+    init: true
+    build:
+      context: .
+      dockerfile: dev/docker/fake-sites.Dockerfile
+    volumes:
+      - ./fake-sites/news:/app
+      - site1-node_modules:/app/node_modules
+    environment:
+      CR_PORT: "18080"
+      CR_BIND_ADDR: "0.0.0.0"
+      PORT: "8081"
+      SITE_ID: "1"
+      SITE_NAME: "The Daily Ledger"
+      SITE_TAGLINE: "News you can trust"
+      SITE_ACCENT: "#1d7d2f"
+      SITE_SEED: "ledger-seed"
+    working_dir: /app
+    command: ["sh", "-c", "pnpm install --frozen-lockfile && node server.js"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  site2:
+    init: true
+    build:
+      context: .
+      dockerfile: dev/docker/fake-sites.Dockerfile
+    volumes:
+      - ./fake-sites/news:/app
+      - site2-node_modules:/app/node_modules
+    environment:
+      CR_PORT: "18080"
+      CR_BIND_ADDR: "0.0.0.0"
+      PORT: "8082"
+      SITE_ID: "2"
+      SITE_NAME: "Kompas Weekly"
+      SITE_TAGLINE: "Your weekly compass"
+      SITE_ACCENT: "#b00020"
+      SITE_SEED: "kompas-seed"
+    working_dir: /app
+    command: ["sh", "-c", "pnpm install --frozen-lockfile && node server.js"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  caddy:
+    image: docker.io/caddy:2-alpine
+    init: true
+    ports:
+      - "192.0.2.1:18080:18080"
+    volumes:
+      - source: ~/.local/share/creators-reward/cert
+        target: /etc/caddy/certs
+        read_only: true
+        type: bind
+        bind:
+          propagation: shared
+          selinux: z
+      - ./dev/docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+    depends_on:
+      - backend
+      - viewer
+      - creator
+      - site1
+      - site2
+
+volumes:
+  backend-target:
+  viewer-node_modules:
+  creator-node_modules:
+  site1-node_modules:
+  site2-node_modules:
+  caddy-data:

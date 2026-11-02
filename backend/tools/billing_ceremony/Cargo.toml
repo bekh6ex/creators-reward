@@ -1,0 +1,33 @@
+[package]
+name = "billing_ceremony"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+# The key holders' half of billing, never run on the server. keygen and tally
+# touch keys and work only with files, so they can run on an offline machine;
+# upload-keys, fetch-batch and upload-totals talk to the admin gateway.
+[[bin]]
+name = "billing-ceremony"
+path = "src/main.rs"
+
+[dependencies]
+billing = { workspace = true }
+base64 = { workspace = true }
+blahaj = "0.7"
+hpke = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+ureq = { version = "2", features = ["json"] }
+url = "2.4.0"
+secrecy = { workspace = true, features = ["serde"] }
+zeroize = "1"
+
+[dev-dependencies]
+rstest = { workspace = true }
+googletest = { workspace = true }
+tempfile = "3.27.0"
+
+[lints]
+workspace = true

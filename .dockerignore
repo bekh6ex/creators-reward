@@ -1,0 +1,24 @@
+# Keeps the docker build context small. Without this the context is the repo
+# root at ~4 GB (backend/target alone is 3.7 GB) and every `docker compose
+# build` uploads all of it to the daemon.
+#
+# Must live here, at the build context root: Docker does not read .dockerignore
+# from anywhere else.
+
+backend/target/
+**/node_modules/
+frontend/viewer/dist/
+frontend/viewer/coverage/
+frontend/creator/dist/
+frontend/creator/coverage/
+
+# Generated per-stack at runtime and mounted directly, never built into an image.
+dev/.state/
+
+.git/
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

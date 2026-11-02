@@ -1,0 +1,24 @@
+[package]
+name = "creator"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+# Creator accounts and the websites they connect. In memory, plaintext
+# passwords, sites connected without an ownership check: the shortcuts are
+# listed in src/lib.rs.
+[dependencies]
+futures = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+time = { workspace = true, features = ["formatting"] }
+uuid = { workspace = true, features = ["v4"] }
+
+[dev-dependencies]
+rstest = { workspace = true }
+googletest = { workspace = true }
+time = { workspace = true, features = ["parsing"] }
+
+[lints]
+workspace = true

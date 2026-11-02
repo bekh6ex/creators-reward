@@ -1,0 +1,21 @@
+[package]
+name = "web_viewer_events"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+common = { workspace = true }
+futures = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+googletest = { workspace = true }
+base64 = { workspace = true }
+hpke = { workspace = true }
+
+[lints]
+workspace = true

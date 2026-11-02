@@ -1,0 +1,33 @@
+# Native dev stack harness recipes.
+
+[private]
+default:
+    @just --list
+
+# Start the stack in the foreground (Ctrl-C stops everything).
+start:
+    ./start.sh
+
+# Start the stack detached and block until ready.
+start-detach:
+    ./start.sh --detach --wait-ready
+
+# Start the stack on a specific slot (0-9).
+start-slot slot:
+    ./start.sh --slot {{slot}}
+
+# Stop the running stack (auto-detect slot).
+stop:
+    ./stop.sh
+
+# Stop a specific slot.
+stop-slot slot:
+    ./stop.sh {{slot}}
+
+# Show status of all running slots.
+status:
+    ./status.sh
+
+# Show status of a specific slot.
+status-slot slot:
+    ./status.sh {{slot}}

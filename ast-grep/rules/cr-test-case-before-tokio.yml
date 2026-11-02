@@ -1,0 +1,16 @@
+id: cr-test-case-before-tokio
+language: rust
+severity: error
+message: "#[case...] must come before #[tokio::test]"
+note: "AGENTS.md CONVENTIONS: a #[case] placed after #[tokio::test] is silently dropped except the first."
+files:
+  - backend/**/*.rs
+rule:
+  any:
+    - pattern: "#[case]"
+    - pattern: "#[case::$NAME($$$)]"
+    - pattern: "#[case($$$)]"
+  follows:
+    stopBy:
+      kind: function_item
+    pattern: "#[tokio::test]"

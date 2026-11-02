@@ -1,0 +1,102 @@
+# Backend recipes for the Rust workspace.
+
+set shell := ["bash", "-cu"]
+
+[private]
+default:
+    @just --list
+
+# Run the HTTPS backend server on 127.0.0.1:3000 (needs a local TLS pair in cert/,
+# which is not committed; see backend/AGENTS.md).
+run:
+    cargo run
+
+# Run the workspace test suite (inline + HTTP integration).
+test:
+    cargo test --workspace
+
+# Format the workspace.
+fmt:
+    cargo fmt --all
+
+# Criterion benchmark for the auth crate.
+bench:
+    cargo bench -p auth
+
+# Check code formatting.
+[group('gate')]
+fmt-check:
+    cargo fmt --all --check
+
+# Run clippy with warnings as errors.
+[group('gate')]
+clippy:
+    cargo clippy --workspace --all-targets -- -D warnings
+
+# Check crate graph advisories, bans, licences and sources.
+[group('gate')]
+deny:
+    cargo deny check advisories bans licenses sources
+
+# Verify supply-chain audits are locked.
+[group('gate')]
+vet:
+    cargo vet --locked
+
+# Find unused or misplaced dependencies.
+[group('gate')]
+shear:
+    cargo shear
+
+# Run tests under llvm-cov and enforce 90% line coverage.
+[group('gate')]
+cov:
+    cargo llvm-cov --workspace --fail-under-lines 90 --no-report
+
+# Run workspace documentation tests.
+[group('gate')]
+doc-tests:
+    cargo test --workspace --doc
+
+# Full backend quality gate: run every step and list failures at the end.
+check:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    failed_steps=()
+    run_step() {
+        local name="$1"
+        shift
+        echo "==> $name"
+        if "$@"; then
+            echo "    OK: $name"
+        else
+            echo "    FAIL: $name"
+            failed_steps+=("$name")
+        fi
+        echo
+    }
+    run_step "cargo fmt" just fmt-check
+    run_step "cargo clippy" just clippy
+    run_step "cargo deny" just deny
+    run_step "cargo vet" just vet
+    run_step "cargo shear" just shear
+    run_step "cargo llvm-cov" just cov
+    run_step "cargo doc-tests" just doc-tests
+    echo "========================================"
+    if [ ${#failed_steps[@]} -eq 0 ]; then
+        echo "All backend checks passed."
+        exit 0
+    else
+        echo "Failed steps:"
+        printf '  - %s\n' "${failed_steps[@]}"
+        exit 1
+    fi
+
+# Mutation testing for billing and auth; extra arguments go to cargo-mutants,
+# e.g. `just mutants -f services/auth/src/opaque/mod.rs`.
+mutants *args:
+    cargo mutants -p billing -p auth --timeout 120 -j 2 {{args}}
+
+# Kani model checking for billing money math (requires `cargo kani setup`).
+kani:
+    cargo kani -p billing

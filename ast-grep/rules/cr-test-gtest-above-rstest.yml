@@ -1,0 +1,13 @@
+id: cr-test-gtest-above-rstest
+language: rust
+severity: error
+message: "#[gtest] must be placed above #[rstest]"
+note: "AGENTS.md CONVENTIONS: Rust tests use googletest matchers; #[gtest] above #[rstest] (below it each test runs twice)."
+files:
+  - backend/**/*.rs
+rule:
+  pattern: "#[gtest]"
+  follows:
+    stopBy:
+      kind: function_item
+    pattern: "#[rstest]"
